@@ -4,5 +4,9 @@ export default defineConfig({
     test: {
         environment: "edge-runtime",
         server: { deps: { inline: ["convex-test"] } },
+        includeSource: ['convex/**/*.{js,ts}'],
+    },
+    define: {
+        'import.meta.vitest': 'undefined',
     },
 });

@@ -62,9 +62,9 @@ export const getRandomMaps = zQuery({
             // Generate a pseudo-random index based on seed and iteration
             const randomValue = (seed * (i + 1)) % availableIndices.length;
             const selectedIndex = availableIndices[randomValue];
-            
+
             selectedMaps.push(allMaps[selectedIndex]);
-            
+
             // Remove the selected index from available indices
             availableIndices.splice(randomValue, 1);
         }
@@ -73,3 +73,47 @@ export const getRandomMaps = zQuery({
     },
 });
 
+// UNIT TESTS
+
+if (import.meta.vitest) {
+    const { describe, it, expect } = import.meta.vitest;
+    const { convexTest } = await import("convex-test");
+    const schema = (await import("../../../schema")).default;
+    const { api } = await import("../../../_generated/api");
+
+    const modules = import.meta.glob("../../../**/*.ts");
+
+    describe("getRandomMaps", () => {
+        it("should return 5 random maps when enough maps exist", async () => {
+            const t = convexTest(schema, modules);
+
+            // Create 10 test maps
+            for (let i = 0; i < 10; i++) {
+                await t.mutation(api.models.maps.mutations.createMap.createMap, {
+                    imageUrl: `https://example.com/map${i}.png`,
+                    location: { latitude: 60.0 + i, longitude: 10.0 + i },
+                    discipline: i % 2 === 0 ? "sprint" : "forest",
+                });
+            }
+
+            const maps = await t.query(api.models.maps.queries.getRandomMaps.getRandomMaps, { mode: "mixed" });
+            expect(maps.length).toBe(5);
+        });
+
+        it("should return all maps when fewer than 5 exist", async () => {
+            const t = convexTest(schema, modules);
+
+            // Create only 3 test maps
+            for (let i = 0; i < 3; i++) {
+                await t.mutation(api.models.maps.mutations.createMap.createMap, {
+                    imageUrl: `https://example.com/map${i}.png`,
+                    location: { latitude: 60.0 + i, longitude: 10.0 + i },
+                    discipline: "sprint",
+                });
+            }
+
+            const maps = await t.query(api.models.maps.queries.getRandomMaps.getRandomMaps, { mode: "sprint" });
+            expect(maps.length).toBe(3);
+        });
+    });
+}
